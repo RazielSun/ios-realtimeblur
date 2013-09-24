@@ -193,6 +193,10 @@
 {
     //get the visible rect
     CGRect visibleRect = [superview convertRect:self.frame toView:self];
+    
+    //nothing to blur, returning...
+    if(CGRectIsEmpty(visibleRect)) return;
+    
     visibleRect.origin.y += self.frame.origin.y;
     visibleRect.origin.x += self.frame.origin.x;
         
