@@ -199,15 +199,17 @@
     
     visibleRect.origin.y += self.frame.origin.y;
     visibleRect.origin.x += self.frame.origin.x;
-        
+    
     //hide all the blurred views from the superview before taking a screenshot
-    CGFloat alpha = self.alpha;    
+    CGFloat alpha = self.alpha;
     [self toggleBlurViewsInView:superview hidden:YES alpha:alpha];
     
     //Render the layer in the image context
     UIGraphicsBeginImageContextWithOptions(visibleRect.size, NO, 1.0);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextTranslateCTM(context, -visibleRect.origin.x, -visibleRect.origin.y);
     CALayer *layer = superview.layer;
-    [layer renderInContext:UIGraphicsGetCurrentContext()];
+    [layer renderInContext:context];
     
     //show all the blurred views from the superview before taking a screenshot
     [self toggleBlurViewsInView:superview hidden:NO alpha:alpha];
@@ -216,13 +218,13 @@
     UIGraphicsEndImageContext();
     
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
-    
+        
         //takes a screenshot of that portion of the screen and blurs it
         //helps w/ our colors when blurring
         //feel free to adjust jpeg quality (lower = higher perf)
         NSData *imageData = UIImageJPEGRepresentation(image, kDRNRealTimeBlurViewScreenshotCompression);
         image = [[UIImage imageWithData:imageData] drn_boxblurImageWithBlur:_blurRadius];
-    
+        
         dispatch_sync(dispatch_get_main_queue(), ^{
             //update the layer content
             self.layer.contents = (id)image.CGImage;
