@@ -56,7 +56,11 @@
 @property (nonatomic, assign) BOOL didSetBlurRadius;
 
 /* Private layer rendering method */
-- (void)renderLayerWithView:(UIView*)superview;
+- (void) renderLayerWithView:(UIView*)superview;
+- (void) renderLayerWithViewController:(UIViewController*)vc;
+
+- (UIView*) customView;
+- (UIViewController*) customViewController;
 
 @end
 
@@ -163,6 +167,26 @@
     }
 }
 
+- (void) useCustomView:(UIView *)_customview
+{
+    customview = _customview;
+}
+
+- (UIView*) customView
+{
+    return customview;
+}
+
+- (void) useCustomViewController:(UIViewController *)_customvc
+{
+    customvc = _customvc;
+}
+
+- (UIViewController*) customViewController
+{
+    return customvc;
+}
+
 #pragma mark - Rendering
 
 /* When the view is pushed to the superview, the layer 
@@ -170,7 +194,21 @@
  * only if renderStatic = YES */
 - (void)willMoveToSuperview:(UIView*)superview
 {
-    [self renderLayerWithView:superview];
+    if (nil != customvc)
+    {
+        [self renderLayerWithViewController:customvc];
+    }
+    else
+    {
+        if (nil != customview)
+        {
+            [self renderLayerWithView:customview];
+        }
+        else
+        {
+            [self renderLayerWithView:superview];
+        }
+    }
 }
 
 /* When the view is visible because is being added to the superview 
@@ -227,6 +265,43 @@
         
         dispatch_sync(dispatch_get_main_queue(), ^{
             //update the layer content
+            self.layer.contents = (id)image.CGImage;
+        });
+    });
+}
+
+- (void) renderLayerWithViewController:(UIViewController*)vc
+{
+    CGRect visibleRect = [vc.view convertRect:self.frame toView:self];
+    
+    if (CGRectIsEmpty(visibleRect))
+    {
+        return;
+    }
+    
+    visibleRect.origin.y += self.frame.origin.y;
+    visibleRect.origin.x += self.frame.origin.x;
+    
+    UIGraphicsBeginImageContextWithOptions(visibleRect.size, NO, 1.0);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextTranslateCTM(context, -visibleRect.origin.x, -visibleRect.origin.y);
+    CALayer *viewLayer = vc.view.layer;
+    [viewLayer renderInContext:context];
+    
+    CGContextTranslateCTM(context, -visibleRect.origin.x, vc.navigationController.navigationBar.frame.origin.y);
+    CALayer *navLayer = vc.navigationController.navigationBar.layer;
+    [navLayer renderInContext:context];
+    
+    __block UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+        
+        NSData *imageData = UIImageJPEGRepresentation(image, kDRNRealTimeBlurViewScreenshotCompression);
+        image = [[UIImage imageWithData:imageData] drn_boxblurImageWithBlur:_blurRadius];
+        
+        dispatch_sync(dispatch_get_main_queue(), ^{
             self.layer.contents = (id)image.CGImage;
         });
     });
@@ -295,7 +370,23 @@
     
     //refresh all the registered views
     for (DRNRealTimeBlurView *view in self.views)
-        [view renderLayerWithView:view.superview];
+    {
+        if (nil != view.customViewController)
+        {
+            [view renderLayerWithViewController:view.customViewController];
+        }
+        else
+        {
+            if (view.customView != nil)
+            {
+                [view renderLayerWithView:view.customView];
+            }
+            else
+            {
+                [view renderLayerWithView:view.superview];
+            }
+        }
+    }
     
     double delayInSeconds = self.views.count * (1/kDRNRealTimeBlurViewRenderFps);
     dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));

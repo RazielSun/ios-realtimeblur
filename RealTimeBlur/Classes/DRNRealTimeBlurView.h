@@ -40,9 +40,14 @@ static const CGFloat kDRNRealTimeBlurViewDefaultCornerRadius = 20.f;
 static const CGFloat kDRNRealTimeBlurViewRenderFps = 30.f;
 
 //the alpha component of the tint color
-static const CGFloat kDNRRealTimeBlurTintColorAlpha = 0.1f;
+static const CGFloat kDNRRealTimeBlurTintColorAlpha = 0.8f;
 
 @interface DRNRealTimeBlurView : UIView
+{
+    __weak UIView *customview;
+    
+    __weak UIViewController *customvc;
+}
 
 /* When renderStatic is YES, the view is not rendered every kDRNRealTimeBlurViewRenderPeriod seconds.
  * Useful when the view is presented modally and there's no interaction in the superview.
@@ -52,7 +57,10 @@ static const CGFloat kDNRRealTimeBlurTintColorAlpha = 0.1f;
 @property (nonatomic, assign) CGFloat blurRadius;
 @property (nonatomic, strong) UIColor *tint;
 
+- (void) useCustomView:(UIView *)_customview;
+- (void) useCustomViewController:(UIViewController *)_customvc;
+
 /* Refresh the view. Useful if renderStatic = YES */
-- (void)refresh;
+- (void) refresh;
 
 @end
