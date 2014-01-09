@@ -57,6 +57,8 @@ static const CGFloat kDNRRealTimeBlurTintColorAlpha = 0.8f;
 @property (nonatomic, assign) CGFloat blurRadius;
 @property (nonatomic, strong) UIColor *tint;
 
+@property (nonatomic, assign) BOOL isScrollRender;
+
 - (void) useCustomView:(UIView *)_customview;
 - (void) useCustomViewController:(UIViewController *)_customvc;
 

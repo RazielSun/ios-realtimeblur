@@ -66,8 +66,9 @@
 
 @implementation DRNRealTimeBlurView
 
-#pragma mark - Constructors
+@synthesize isScrollRender = _isScrollRender;
 
+#pragma mark - Constructors
 
 - (id)initWithFrame:(CGRect)frame
 {
@@ -233,10 +234,16 @@
     CGRect visibleRect = [superview convertRect:self.frame toView:self];
     
     //nothing to blur, returning...
-    if(CGRectIsEmpty(visibleRect)) return;
+    if(CGRectIsEmpty(visibleRect))
+    {
+        return;
+    }
     
-    visibleRect.origin.y += self.frame.origin.y;
-    visibleRect.origin.x += self.frame.origin.x;
+    if (!_isScrollRender)
+    {
+        visibleRect.origin.y += self.frame.origin.y;
+        visibleRect.origin.x += self.frame.origin.x;
+    }
     
     //hide all the blurred views from the superview before taking a screenshot
     CGFloat alpha = self.alpha;
@@ -245,7 +252,16 @@
     //Render the layer in the image context
     UIGraphicsBeginImageContextWithOptions(visibleRect.size, NO, 1.0);
     CGContextRef context = UIGraphicsGetCurrentContext();
-    CGContextTranslateCTM(context, -visibleRect.origin.x, -visibleRect.origin.y);
+    
+    if (!_isScrollRender)
+    {
+        CGContextTranslateCTM(context, -visibleRect.origin.x, -visibleRect.origin.y);
+    }
+    else
+    {
+        CGContextTranslateCTM(context, visibleRect.origin.x, visibleRect.origin.y);
+    }
+    
     CALayer *layer = superview.layer;
     [layer renderInContext:context];
     
